@@ -1,0 +1,235 @@
+version: '3.8'
+
+services:
+  # ============ KAFKA INFRASTRUCTURE ============
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.5.0
+    container_name: zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    ports:
+      - "2181:2181"
+    networks:
+      - kamf-network
+    healthcheck:
+      test: ["CMD", "echo", "ruok", "|", "nc", "localhost", "2181"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  kafka:
+    image: confluentinc/cp-kafka:7.5.0
+    container_name: kafka
+    depends_on:
+      zookeeper:
+        condition: service_healthy
+    ports:
+      - "9092:9092"
+      - "29092:29092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: 'zookeeper:2181'
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'true'
+      KAFKA_LOG_RETENTION_HOURS: 1
+      KAFKA_LOG_SEGMENT_BYTES: 1073741824
+    networks:
+      - kamf-network
+    volumes:
+      - kafka-data:/var/lib/kafka/data
+    healthcheck:
+      test: ["CMD", "kafka-broker-api-versions", "--bootstrap-server", "kafka:29092"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: kafka-ui
+    depends_on:
+      kafka:
+        condition: service_healthy
+    ports:
+      - "8080:8080"
+    environment:
+      KAFKA_CLUSTERS_0_NAME: local
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:29092
+      KAFKA_CLUSTERS_0_ZOOKEEPER: zookeeper:2181
+      DYNAMIC_CONFIG_ENABLED: "true"
+    networks:
+      - kamf-network
+
+  # ============ FLINK INFRASTRUCTURE ============
+  flink-jobmanager:
+    image: flink:1.18-java11
+    container_name: flink-jobmanager
+    ports:
+      - "8081:8081"
+      - "6123:6123"
+    command: jobmanager
+    environment:
+      - |
+        FLINK_PROPERTIES=
+        jobmanager.rpc.address: flink-jobmanager
+        parallelism.default: 2
+        web.submit.enable: true
+    networks:
+      - kamf-network
+    volumes:
+      - flink-data:/opt/flink/data
+      - ./flink-jobs:/opt/flink/jobs
+
+  flink-taskmanager:
+    image: flink:1.18-java11
+    container_name: flink-taskmanager
+    depends_on:
+      - flink-jobmanager
+    command: taskmanager
+    environment:
+      - |
+        FLINK_PROPERTIES=
+        jobmanager.rpc.address: flink-jobmanager
+        taskmanager.numberOfTaskSlots: 2
+        parallelism.default: 2
+    networks:
+      - kamf-network
+    volumes:
+      - flink-data:/opt/flink/data
+
+  # ============ DEMO 1: KAFKA AGENTS ============
+  order-agent:
+    build:
+      context: ./agents
+      dockerfile: Dockerfile
+    container_name: order-agent
+    depends_on:
+      kafka:
+        condition: service_healthy
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      AGENT_NAME: order-agent
+      AGENT_TYPE: order_processor
+      PYTHONUNBUFFERED: 1
+    volumes:
+      - ./agents:/app
+    command: python order_agent.py
+    networks:
+      - kamf-network
+    restart: unless-stopped
+
+  inventory-agent:
+    build:
+      context: ./agents
+      dockerfile: Dockerfile
+    container_name: inventory-agent
+    depends_on:
+      kafka:
+        condition: service_healthy
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      AGENT_NAME: inventory-agent
+      AGENT_TYPE: inventory_checker
+      PYTHONUNBUFFERED: 1
+    volumes:
+      - ./agents:/app
+    command: python inventory_agent.py
+    networks:
+      - kamf-network
+    restart: unless-stopped
+
+  # ============ DEMO 2: FLINK PROCESSOR ============
+  flink-processor:
+    build:
+      context: ./flink-jobs
+      dockerfile: Dockerfile
+    container_name: flink-processor
+    depends_on:
+      - flink-jobmanager
+      - kafka
+    environment:
+      FLINK_JOBMANAGER: flink-jobmanager:6123
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+    volumes:
+      - ./flink-jobs:/opt/flink/jobs
+    networks:
+      - kamf-network
+    profiles:
+      - flink-demo
+
+  # ============ DEMO 3: A2A SERVER ============
+  a2a-server:
+    build:
+      context: ./a2a-demo
+      dockerfile: Dockerfile
+    container_name: a2a-server
+    ports:
+      - "5000:5000"
+      - "5001:5001"
+    environment:
+      A2A_PORT: 5000
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      PYTHONUNBUFFERED: 1
+    volumes:
+      - ./a2a-demo:/app
+    command: python agent_server.py 5000 DataAnalyzer
+    networks:
+      - kamf-network
+    restart: unless-stopped
+
+  a2a-server-2:
+    build:
+      context: ./a2a-demo
+      dockerfile: Dockerfile
+    container_name: a2a-server-2
+    ports:
+      - "5002:5002"
+    environment:
+      A2A_PORT: 5002
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      PYTHONUNBUFFERED: 1
+    volumes:
+      - ./a2a-demo:/app
+    command: python agent_server.py 5002 ReportGenerator
+    networks:
+      - kamf-network
+    restart: unless-stopped
+    profiles:
+      - multi-agent
+
+  # ============ DEMO 4: MCP SERVER ============
+  mcp-server:
+    build:
+      context: ./mcp-demo
+      dockerfile: Dockerfile
+    container_name: mcp-server
+    ports:
+      - "6000:6000"
+    environment:
+      MCP_PORT: 6000
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      PYTHONUNBUFFERED: 1
+    volumes:
+      - ./mcp-demo:/app
+    command: python mcp_server.py
+    networks:
+      - kamf-network
+    restart: unless-stopped
+
+networks:
+  kamf-network:
+    driver: bridge
+    name: kamf-network
+
+volumes:
+  kafka-data:
+    name: kafka-data
+  zookeeper-data:
+    name: zookeeper-data
+  flink-data:
+    name: flink-data

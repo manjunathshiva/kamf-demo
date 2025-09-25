@@ -1,0 +1,5 @@
+# ============================================
+
+# flink-jobs/requirements.txt
+apache-flink==1.18.0
+kafka-python==2.0.2
