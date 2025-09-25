@@ -67,7 +67,9 @@ services:
 
   # ============ FLINK INFRASTRUCTURE ============
   flink-jobmanager:
-    image: flink:1.18-java11
+    build:
+      context: ./flink-jobs
+      dockerfile: Dockerfile
     container_name: flink-jobmanager
     ports:
       - "8081:8081"
@@ -86,7 +88,9 @@ services:
       - ./flink-jobs:/opt/flink/jobs
 
   flink-taskmanager:
-    image: flink:1.18-java11
+    build:
+      context: ./flink-jobs
+      dockerfile: Dockerfile
     container_name: flink-taskmanager
     depends_on:
       - flink-jobmanager

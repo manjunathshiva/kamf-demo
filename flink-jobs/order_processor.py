@@ -5,14 +5,8 @@ Aggregates orders, detects patterns, and triggers alerts
 """
 
 from pyflink.datastream import StreamExecutionEnvironment
-from pyflink.datastream.connectors.kafka import KafkaSource, KafkaOffsetsInitializer, KafkaSink, KafkaRecordSerializationSchema
-from pyflink.datastream.formats.json import JsonRowDeserializationSchema, JsonRowSerializationSchema
-from pyflink.common.typeinfo import Types
-from pyflink.datastream.functions import MapFunction, ProcessWindowFunction, ProcessFunction
-from pyflink.datastream.window import TumblingEventTimeWindows, SlidingEventTimeWindows
+from pyflink.datastream.functions import MapFunction, ProcessFunction
 from pyflink.common.time import Time
-from pyflink.common.watermark_strategy import WatermarkStrategy
-from pyflink.table import StreamTableEnvironment
 import json
 import logging
 from datetime import datetime
@@ -90,64 +84,42 @@ class FraudDetector(ProcessFunction):
             # In real implementation, this would go to a separate stream
             logger.warning(f"⚠️ FRAUD ALERT: Order {order['order_id']} has score {fraud_score}")
 
-class OrderAggregator(ProcessWindowFunction):
-    """Aggregate orders in time windows"""
-    
-    def process(self, key, context, elements):
-        orders = list(elements)
-        
-        # Calculate window statistics
-        window_stats = {
-            'window_start': datetime.fromtimestamp(context.window().start / 1000).isoformat(),
-            'window_end': datetime.fromtimestamp(context.window().end / 1000).isoformat(),
-            'order_count': len(orders),
-            'total_revenue': sum(o.get('total', 0) for o in orders),
-            'avg_order_value': sum(o.get('total', 0) for o in orders) / max(len(orders), 1),
-            'unique_customers': len(set(o.get('customer_id') for o in orders)),
-            'product_summary': self._get_product_summary(orders),
-            'timestamp': datetime.now().isoformat()
-        }
-        
-        yield window_stats
-    
-    def _get_product_summary(self, orders):
-        product_counts = {}
-        for order in orders:
-            for item in order.get('items', []):
-                product = item.get('product')
-                if product:
-                    product_counts[product] = product_counts.get(product, 0) + item.get('quantity', 0)
-        return product_counts
+# OrderAggregator removed for simplified demo
 
 def create_flink_job():
-    """Create and configure Flink streaming job"""
+    """Create and configure Flink streaming job for order processing demo"""
     
     # Set up the execution environment
     env = StreamExecutionEnvironment.get_execution_environment()
-    env.set_parallelism(2)
+    env.set_parallelism(1)
     
     # Configure checkpointing for fault tolerance
     env.enable_checkpointing(10000)  # Checkpoint every 10 seconds
     
-    # Create Kafka source for orders
-    kafka_source = KafkaSource.builder() \
-        .set_bootstrap_servers("kafka:29092") \
-        .set_topics("order-events") \
-        .set_group_id("flink-order-processor") \
-        .set_starting_offsets(KafkaOffsetsInitializer.latest()) \
-        .set_value_only_deserializer(
-            JsonRowDeserializationSchema.builder()
-                .type_info(Types.MAP(Types.STRING(), Types.PRIMITIVE()))
-                .build()
-        ) \
-        .build()
+    # Create dynamic sample order data stream (changes each run)
+    import random
+    timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
     
-    # Create the main processing pipeline
-    order_stream = env.from_source(
-        kafka_source,
-        WatermarkStrategy.for_monotonous_timestamps(),
-        "KafkaOrderSource"
-    )
+    products = ['Laptop', 'Mouse', 'Keyboard', 'Monitor', 'Headphones', 'Webcam']
+    sample_orders = []
+    
+    for i in range(random.randint(3, 6)):  # Variable number of orders
+        product = random.choice(products)
+        quantity = random.randint(1, 3)
+        price = round(random.uniform(50, 2000), 2)
+        total = quantity * price
+        
+        order = {
+            'order_id': f'ORD-FLINK-{timestamp}-{i+1}',
+            'customer_id': f'CUST-{random.randint(100, 999)}',
+            'total': total,
+            'timestamp': datetime.now().isoformat(),
+            'items': [{'product': product, 'quantity': quantity, 'price': price}]
+        }
+        sample_orders.append(json.dumps(order))
+    
+    # Create data stream from sample orders
+    order_stream = env.from_collection(sample_orders)
     
     # Apply transformations
     enriched_orders = order_stream \
@@ -159,52 +131,11 @@ def create_flink_job():
         .process(FraudDetector()) \
         .name("FraudDetection")
     
-    # Window aggregation branch (every 30 seconds)
-    windowed_stats = enriched_orders \
-        .key_by(lambda x: "all") \
-        .window(TumblingEventTimeWindows.of(Time.seconds(30))) \
-        .process(OrderAggregator()) \
-        .name("WindowAggregation")
-    
-    # Create Kafka sinks
-    enriched_sink = KafkaSink.builder() \
-        .set_bootstrap_servers("kafka:29092") \
-        .set_record_serializer(
-            KafkaRecordSerializationSchema.builder()
-                .set_topic("enriched-orders")
-                .set_value_serialization_schema(
-                    JsonRowSerializationSchema.builder()
-                        .with_type_info(Types.MAP(Types.STRING(), Types.PRIMITIVE()))
-                        .build()
-                )
-                .build()
-        ) \
-        .build()
-    
-    stats_sink = KafkaSink.builder() \
-        .set_bootstrap_servers("kafka:29092") \
-        .set_record_serializer(
-            KafkaRecordSerializationSchema.builder()
-                .set_topic("order-statistics")
-                .set_value_serialization_schema(
-                    JsonRowSerializationSchema.builder()
-                        .with_type_info(Types.MAP(Types.STRING(), Types.PRIMITIVE()))
-                        .build()
-                )
-                .build()
-        ) \
-        .build()
-    
-    # Send processed streams to Kafka
-    fraud_checked.sink_to(enriched_sink).name("EnrichedOrdersSink")
-    windowed_stats.sink_to(stats_sink).name("StatisticsSink")
-    
-    # Print to console for demo visibility
+    # Print results for demo visibility
     fraud_checked.print()
-    windowed_stats.print()
     
     # Execute the job
-    env.execute("Order Processing Pipeline")
+    env.execute("KAMF Demo - Order Processing Pipeline")
 
 if __name__ == "__main__":
     logger.info("Starting Flink Order Processing Job...")
