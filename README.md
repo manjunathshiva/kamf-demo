@@ -9,338 +9,212 @@ This demo showcases the complete KAMF Stack with all four components working tog
 - **M**CP - Model Context Protocol for tool usage
 - **F**link - Real-time stream processing
 
-## 📋 Prerequisites
+## ⚡ Quick Start (5 minutes)
 
-- **Docker Desktop** installed and running
-- **Python 3.10+** (for local testing)
-- **8-10GB RAM** available
-- **Ports available**: 2181, 5000-5002, 6000, 8080, 8081, 9092
+```bash
+# 1. Navigate to demo directory
+cd /Users/manjunm4/meetup/agentnexas/kamf-demo
+
+# 2. Make scripts executable
+chmod +x demo-scripts/*.sh
+
+# 3. Start all services (with retry logic for Docker issues)
+./demo-scripts/start-all-retry.sh
+
+# 4. Run the unified demo (RECOMMENDED - 5 minutes)
+./demo-scripts/unified-demo.sh
+```
+
+## 🎯 Unified Demos - All Components Working Together
+
+### Option 1: **Unified Interactive Demo** (BEST FOR PRESENTATION)
+```bash
+./demo-scripts/unified-demo.sh
+```
+- Shows complete order processing flow
+- Demonstrates all 4 components interacting
+- Step-by-step with explanations
+- Perfect for presentations (5-6 minutes)
+
+### Option 2: **Quick 5-Minute Demo**
+```bash
+./demo-scripts/quick-5min-demo.sh
+```
+- Rapid demonstration of all components
+- Focuses on key integration points
+- Great for time-constrained presentations
+
+### Option 3: **Visual Dashboard Demo**
+```bash
+./demo-scripts/visual-demo.sh
+```
+- Opens Kafka UI and Flink Dashboard
+- Shows real-time data flow visually
+- Best with dual monitors
+
+### Option 4: **Automated Demo with Live Data**
+```bash
+./demo-scripts/unified-demo-auto.sh
+```
+- Continuously generates orders
+- Shows live metrics updating
+- Good for exhibitions/booths
+
+## 📊 What the Unified Demo Shows
+
+The unified demo demonstrates a complete e-commerce order processing scenario:
+
+1. **Order Creation** → Published to Kafka
+2. **Agent Discovery** → Order Agent finds Inventory Agent via A2A
+3. **Tool Execution** → Inventory check via MCP database tool
+4. **Stream Processing** → Flink enriches order and detects fraud
+5. **Customer Notification** → Email sent via MCP tool
+
+All happening in real-time, fully integrated!
 
 ## 🏗️ Project Structure
 
 ```
 kamf-demo/
-├── docker-compose.yml      # Complete infrastructure setup
-├── agents/                 # Demo 1: Kafka Agents
-│   ├── order_agent.py      # Order processing agent
-│   ├── inventory_agent.py  # Inventory checking agent
-│   ├── requirements.txt
-│   └── Dockerfile
-├── flink-jobs/            # Demo 2: Flink Processing
-│   ├── order_processor.py # Stream processing job
-│   ├── submit_job.sh      # Job submission script
-│   ├── requirements.txt
-│   └── Dockerfile
-├── a2a-demo/              # Demo 3: A2A Protocol
-│   ├── agent_server.py    # A2A server implementation
-│   ├── agent_client.py    # A2A client for testing
-│   ├── requirements.txt
-│   └── Dockerfile
-├── mcp-demo/              # Demo 4: MCP Protocol
-│   ├── mcp_server.py      # MCP server with tools
-│   ├── mcp_client.py      # MCP client for testing
-│   ├── requirements.txt
-│   └── Dockerfile
-└── demo-scripts/          # Demo execution scripts
-    ├── start-all.sh       # Start all services
-    ├── stop-all.sh        # Stop all services
-    ├── monitor.sh         # Monitor all services
-    ├── demo-1-kafka.sh    # Kafka agents demo
-    ├── demo-2-flink.sh    # Flink processing demo
-    ├── demo-3-a2a.sh      # A2A protocol demo
-    └── demo-4-mcp.sh      # MCP tools demo
+├── docker-compose.yml       # Complete infrastructure
+├── agents/                  # Kafka agents (Demo 1)
+├── flink-jobs/             # Stream processing (Demo 2)
+├── a2a-demo/               # A2A protocol (Demo 3)
+├── mcp-demo/               # MCP tools (Demo 4)
+└── demo-scripts/
+    ├── start-all-retry.sh   # Start with retry logic
+    ├── unified-demo.sh      # ⭐ MAIN UNIFIED DEMO
+    ├── quick-5min-demo.sh   # Quick integrated demo
+    ├── visual-demo.sh       # Dashboard-focused demo
+    ├── unified-demo-auto.sh # Automated with live data
+    └── monitor.sh           # Monitor all services
 ```
 
-## ⚡ Quick Start (5 minutes)
+## 📺 Individual Component Demos (Optional)
+
+If you want to show individual components:
 
 ```bash
-# 1. Clone/navigate to the demo directory
-cd /Users/manjunm4/meetup/agentnexas/kamf-demo
-
-# 2. Make all scripts executable
-chmod +x demo-scripts/*.sh
-
-# 3. Start all services
-./demo-scripts/start-all-retry.sh  
-
-# 4. Wait for services to be ready (about 1 minute)
-
-# 5. Run demos individually
-./demo-scripts/demo-1-kafka.sh   # Demo 1: Kafka Agents
-./demo-scripts/demo-2-flink.sh   # Demo 2: Flink Processing
-./demo-scripts/demo-3-a2a.sh     # Demo 3: A2A Protocol
-./demo-scripts/demo-4-mcp.sh     # Demo 4: MCP Tools
-
-# 6. Monitor all services
-./demo-scripts/monitor.sh
-
-# 7. Stop everything when done
-./demo-scripts/stop-all.sh
+./demo-scripts/demo-1-kafka.sh   # Kafka agents only
+./demo-scripts/demo-2-flink.sh   # Flink processing only
+./demo-scripts/demo-3-a2a.sh     # A2A protocol only
+./demo-scripts/demo-4-mcp.sh     # MCP tools only
 ```
-
-## 📺 Individual Demos
-
-### Demo 1: Kafka - Agent Communication (3 minutes)
-
-**What it shows:**
-- Order agent creating orders every 15 seconds
-- Inventory agent checking stock in real-time
-- Event-driven communication through Kafka
-- Decoupled, scalable architecture
-
-**Run:**
-```bash
-./demo-scripts/demo-1-kafka.sh
-```
-
-**Key Points:**
-- Agents don't know about each other
-- Kafka handles routing and durability
-- System scales to hundreds of agents
-
-**Visual Elements:**
-- Kafka UI: http://localhost:8080
-- Real-time log streaming
-- Order creation and inventory checks
-
-### Demo 2: Flink - Real-time Processing (3 minutes)
-
-**What it shows:**
-- Stream processing of order events
-- Real-time fraud detection
-- Window-based aggregations (30 seconds)
-- Stateful processing with checkpointing
-
-**Run:**
-```bash
-./demo-scripts/demo-2-flink.sh
-```
-
-**Key Points:**
-- Processes thousands of events/second
-- Complex event correlation
-- Fault-tolerant with exactly-once semantics
-
-**Visual Elements:**
-- Flink Dashboard: http://localhost:8081
-- Job graph visualization
-- Metrics and throughput
-
-### Demo 3: A2A Protocol - Agent Discovery (3 minutes)
-
-**What it shows:**
-- Agent capability discovery via AgentCards
-- JSON-RPC task delegation
-- Asynchronous task processing
-- Standardized communication
-
-**Run:**
-```bash
-./demo-scripts/demo-3-a2a.sh
-```
-
-**Key Points:**
-- No hardcoded integrations
-- Agents discover each other dynamically
-- Protocol-based communication
-
-**Visual Elements:**
-- JSON AgentCard responses
-- Task submission and monitoring
-- Real-time status updates
-
-### Demo 4: MCP - Tool Usage (3 minutes)
-
-**What it shows:**
-- Dynamic tool discovery
-- Parameter validation
-- Standardized tool execution
-- Execution history tracking
-
-**Run:**
-```bash
-./demo-scripts/demo-4-mcp.sh
-```
-
-**Key Points:**
-- Tools as first-class citizens
-- Automatic parameter validation
-- Plug-and-play architecture
-
-**Visual Elements:**
-- Tool catalog with 5 different tools
-- Execution metrics
-- Workflow orchestration
 
 ## 🎯 Presentation Flow (30 minutes)
 
-### Suggested Timeline:
-1. **Introduction** (2 min) - Problem statement
-2. **KAMF Overview** (3 min) - Stack components
-3. **Demo 1: Kafka** (5 min) - Event streaming
-4. **Demo 2: Flink** (5 min) - Stream processing
-5. **Demo 3: A2A** (5 min) - Agent communication
-6. **Demo 4: MCP** (5 min) - Tool standardization
-7. **Integration** (3 min) - How they work together
-8. **Q&A** (2 min)
+### Recommended Structure:
+1. **Introduction** (3 min) - Problem statement
+2. **Architecture Overview** (2 min) - KAMF components
+3. **Unified Demo** (5-6 min) - Run `./demo-scripts/unified-demo.sh`
+4. **Deep Dives** (15 min) - Explain each component's role
+5. **Benefits & Use Cases** (3 min) - Why this matters
+6. **Q&A** (2 min)
 
-### Pro Tips:
-- Start all services 5 minutes before presentation
-- Have browser tabs open: Kafka UI, Flink Dashboard
-- Use split terminal: logs on left, commands on right
-- Keep `monitor.sh` running in a visible window
+### For 5-Minute Lightning Talk:
+Just run: `./demo-scripts/quick-5min-demo.sh`
 
-## 📊 Monitoring & Debugging
+## 📍 Service URLs
 
-### Monitor All Services:
-```bash
-# Real-time monitoring
-watch -n 2 ./demo-scripts/monitor.sh
-
-# Check specific service logs
-docker-compose logs -f order-agent
-docker-compose logs -f flink-jobmanager
-docker-compose logs -f a2a-server
-docker-compose logs -f mcp-server
-```
-
-### Service URLs:
 - **Kafka UI**: http://localhost:8080
 - **Flink Dashboard**: http://localhost:8081
 - **A2A Discovery**: http://localhost:5000/a2a/discovery
 - **MCP Tools**: http://localhost:6000/mcp/tools
 
-### Common Issues:
-
-**Port already in use:**
-```bash
-# Find process using port
-lsof -i :8080
-# Kill process
-kill -9 <PID>
-```
-
-**Kafka not starting:**
-```bash
-# Clean up and restart
-docker-compose down -v
-docker-compose up -d kafka zookeeper
-```
-
-**Flink job not running:**
-```bash
-# Submit job manually
-docker exec flink-jobmanager /opt/flink/bin/flink run -py /opt/flink/jobs/order_processor.py
-```
-
-## 🧪 Local Testing (without Docker)
-
-For quick tests without Docker:
-
-```bash
-# Install Python dependencies
-pip install aiohttp kafka-python
-
-# Test A2A locally
-cd a2a-demo
-python3 agent_server.py &
-python3 agent_client.py
-
-# Test MCP locally
-cd mcp-demo
-python3 mcp_server.py &
-python3 mcp_client.py
-```
-
 ## 🎨 Demo Highlights
 
-### Visual Indicators:
-- 🔍 Discovery
-- 📋 Task/Tool execution
-- ✅ Success
-- ❌ Failure
-- ⏳ Processing
-- 📊 Metrics
+### Visual Flow:
+```
+Customer Order → Kafka → Order Agent → A2A Discovery → 
+Inventory Agent → MCP Tools → Database Query → Kafka → 
+Flink Processing → Enrichment + Fraud Detection → 
+Kafka → Notification Agent → MCP Email Tool → Customer
+```
 
-### Console Formatting:
-- Clear section separators (`====`)
-- Colored output (if terminal supports)
-- Progress indicators
-- Real-time updates
+### Key Integration Points:
+1. **Kafka ↔ Agents**: Event-driven communication
+2. **Agents ↔ A2A**: Dynamic discovery
+3. **Agents ↔ MCP**: Tool execution
+4. **Kafka ↔ Flink**: Stream processing
+
+## 📊 Monitoring
+
+```bash
+# Real-time monitoring
+./demo-scripts/monitor.sh
+
+# Watch specific logs
+docker-compose logs -f order-agent
+docker-compose logs -f flink-taskmanager
+```
 
 ## 🚦 Success Metrics
 
 Your demo is successful when you show:
-1. ✅ Agents communicating via Kafka without direct connections
-2. ✅ Flink processing streams in real-time with fraud detection
-3. ✅ A2A agents discovering and delegating tasks
-4. ✅ MCP tools being executed with validation
-
-## 🛠️ Cleanup
-
-```bash
-# Stop all services
-./demo-scripts/stop-all.sh
-
-# Remove all data and volumes
-docker-compose down -v
-
-# Remove all containers and images
-docker system prune -af
-```
-
-## 📚 Resources
-
-- **Apache Kafka**: https://kafka.apache.org
-- **Apache Flink**: https://flink.apache.org
-- **A2A Protocol**: https://github.com/google/a2a
-- **MCP Protocol**: https://modelcontextprotocol.io
-- **12-Factor Agents**: https://github.com/humanlayer/12-factor-agents
+1. ✅ Events flowing through Kafka topics
+2. ✅ Agents discovering each other via A2A
+3. ✅ Tools being executed via MCP
+4. ✅ Flink processing streams in real-time
+5. ✅ **All working together seamlessly!**
 
 ## 💡 Key Takeaways
 
-1. **Protocols aren't enough** - You need infrastructure
-2. **Event-driven > Point-to-point** - For scale and resilience
-3. **Standards enable ecosystems** - Like HTTP enabled the web
-4. **Production-ready matters** - Not just demos, but real systems
+The unified demo proves that:
+- **Integration > Individual Components**
+- **Protocols + Infrastructure = Production Ready**
+- **Event-driven architecture scales**
+- **Standards enable ecosystem growth**
 
-## 🆘 Troubleshooting During Presentation
+## 🆘 Quick Troubleshooting
 
-If something fails during the demo:
-1. **Stay calm** - "This is exactly why we need production-grade infrastructure"
-2. **Use monitor script** - Show what's still running
-3. **Have backup** - Screenshots or pre-recorded video
-4. **Explain the value** - Focus on concepts if demo fails
-
-## ✨ Final Notes
-
-This demo showcases a complete, production-ready AI agent ecosystem. Each component is essential:
-- **Kafka** provides the nervous system
-- **Flink** provides the real-time brain
-- **A2A** provides the common language
-- **MCP** provides the tool standardization
-
-Together, they form the foundation for building scalable, resilient, and intelligent agent systems that can grow from 2 agents to 200+ without changing the architecture.
-
-## 🎬 Demo Commands Cheatsheet
-
+If services aren't starting:
 ```bash
-# Quick commands for presentation
-curl -s http://localhost:5000/a2a/discovery | jq .          # A2A discovery
-curl -s http://localhost:6000/mcp/tools | jq '.tools[0]'    # MCP tools
-docker exec kafka kafka-topics --list --bootstrap-server localhost:29092
-docker logs --tail 10 order-agent                           # Recent logs
+# Check what's running
+docker ps
+
+# Restart specific service
+docker-compose restart kafka
+
+# Check logs
+docker-compose logs kafka
+
+# Full restart
+./demo-scripts/stop-all.sh
+./demo-scripts/start-all-retry.sh
 ```
 
-## 📈 Metrics to Highlight
+## ✨ Demo Tips
 
-During your presentation, emphasize:
-- **Kafka**: 1000s of messages/sec capability
-- **Flink**: Sub-second processing latency
-- **A2A**: Zero-config agent discovery
-- **MCP**: 5 tool categories, unlimited tools
+1. **Start services 5 minutes early**
+2. **Run unified demo for maximum impact**
+3. **Keep Kafka UI open to show message flow**
+4. **Emphasize the integration, not individual tools**
+5. **Use the visual flow diagram in slides**
 
-Good luck with your presentation! 🚀
+## 🎬 Quick Commands for Presentation
+
+```bash
+# Start everything
+./demo-scripts/start-all-retry.sh
+
+# Run the main demo
+./demo-scripts/unified-demo.sh
+
+# Monitor
+./demo-scripts/monitor.sh
+
+# Stop when done
+./demo-scripts/stop-all.sh
+```
+
+## 📈 Why KAMF Stack Matters
+
+- **From 2 agents to 200+** without changing architecture
+- **Handles 1000s of events/second**
+- **Fault-tolerant and resilient**
+- **Protocol-based, not custom integrations**
+- **Production-ready from day one**
 
 ---
-*Built with ❤️ for the AI Agent community*
+
+**Good luck with your presentation! The unified demo will show the true power of the KAMF Stack! 🚀**

@@ -145,12 +145,12 @@ class OrderAgent:
         
         while True:
             try:
-                # Create and publish a new order every 15 seconds
+                # Create and publish a new order every 300 seconds
                 order = self.create_order()
                 self.publish_order(order)
                 
                 # Wait before next order
-                time.sleep(15)
+                time.sleep(300)
                 
             except KeyboardInterrupt:
                 logger.info("Shutting down Order Agent...")
