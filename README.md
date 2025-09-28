@@ -13,46 +13,30 @@ This demo showcases the complete KAMF Stack with all four components working tog
 
 ```bash
 # 1. Navigate to demo directory
-cd /Users/manjunm4/meetup/agentnexas/kamf-demo
+cd */kamf-demo
 
 # 2. Make scripts executable
 chmod +x demo-scripts/*.sh
 
-# 3. Start all services (with retry logic for Docker issues)
+# 3. Start all services 
 ./demo-scripts/start-all-retry.sh
 
-# 4. Run the unified demo (RECOMMENDED - 5 minutes)
+# 4. Run the unified demo 
 ./demo-scripts/unified-demo.sh
 ```
 
 ## 🎯 Unified Demos - All Components Working Together
 
-### Option 1: **Unified Interactive Demo** (BEST FOR PRESENTATION)
+### **Unified Interactive Demo** 
 ```bash
 ./demo-scripts/unified-demo.sh
 ```
 - Shows complete order processing flow
 - Demonstrates all 4 components interacting
 - Step-by-step with explanations
-- Perfect for presentations (5-6 minutes)
 
-### Option 2: **Quick 5-Minute Demo**
-```bash
-./demo-scripts/quick-5min-demo.sh
-```
-- Rapid demonstration of all components
-- Focuses on key integration points
-- Great for time-constrained presentations
 
-### Option 3: **Visual Dashboard Demo**
-```bash
-./demo-scripts/visual-demo.sh
-```
-- Opens Kafka UI and Flink Dashboard
-- Shows real-time data flow visually
-- Best with dual monitors
-
-### Option 4: **Automated Demo with Live Data**
+### **Automated Demo with Live Data**
 ```bash
 ./demo-scripts/unified-demo-auto.sh
 ```
@@ -101,19 +85,6 @@ If you want to show individual components:
 ./demo-scripts/demo-4-mcp.sh     # MCP tools only
 ```
 
-## 🎯 Presentation Flow (30 minutes)
-
-### Recommended Structure:
-1. **Introduction** (3 min) - Problem statement
-2. **Architecture Overview** (2 min) - KAMF components
-3. **Unified Demo** (5-6 min) - Run `./demo-scripts/unified-demo.sh`
-4. **Deep Dives** (15 min) - Explain each component's role
-5. **Benefits & Use Cases** (3 min) - Why this matters
-6. **Q&A** (2 min)
-
-### For 5-Minute Lightning Talk:
-Just run: `./demo-scripts/quick-5min-demo.sh`
-
 ## 📍 Service URLs
 
 - **Kafka UI**: http://localhost:8080
@@ -150,7 +121,7 @@ docker-compose logs -f flink-taskmanager
 
 ## 🚦 Success Metrics
 
-Your demo is successful when you show:
+Demo is successful when you show:
 1. ✅ Events flowing through Kafka topics
 2. ✅ Agents discovering each other via A2A
 3. ✅ Tools being executed via MCP
@@ -165,7 +136,7 @@ The unified demo proves that:
 - **Event-driven architecture scales**
 - **Standards enable ecosystem growth**
 
-## 🆘 Quick Troubleshooting
+## Quick Troubleshooting
 
 If services aren't starting:
 ```bash
@@ -183,15 +154,8 @@ docker-compose logs kafka
 ./demo-scripts/start-all-retry.sh
 ```
 
-## ✨ Demo Tips
 
-1. **Start services 5 minutes early**
-2. **Run unified demo for maximum impact**
-3. **Keep Kafka UI open to show message flow**
-4. **Emphasize the integration, not individual tools**
-5. **Use the visual flow diagram in slides**
-
-## 🎬 Quick Commands for Presentation
+## Quick Commands
 
 ```bash
 # Start everything
@@ -217,4 +181,3 @@ docker-compose logs kafka
 
 ---
 
-**Good luck with your presentation! The unified demo will show the true power of the KAMF Stack! 🚀**
